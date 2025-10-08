@@ -8,11 +8,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3600
 
+    env:
+      SSH_USER: ubuntu
+      SSH_PASS: ${{ secrets.SSH_PASSWORD }}
+      TAILSCALE_AUTH_KEY: ${{ secrets.TAILSCALE_AUTH_KEY }}
+
     steps:
       - name: Install Tailscale
         run: |
           curl -fsSL https://tailscale.com/install.sh | sh
-          sudo tailscale up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=gh-ubuntu-${{ github.run_id }}
+          sudo tailscale up --authkey=${TAILSCALE_AUTH_KEY} --hostname=gh-ubuntu-${{ github.run_id }}
 
       - name: Show Tailscale IP
         run: |
@@ -21,30 +26,22 @@ jobs:
 
       - name: Create SSH User and Start SSH Server
         run: |
-          # အသုံးပြုသူအသစ်ဖန်တီး
-          sudo useradd -m ubuntu
+          sudo adduser --disabled-password --gecos "" ${SSH_USER}
+          echo "${SSH_USER}:${SSH_PASS}" | sudo chpasswd
+          sudo usermod -aG sudo ${SSH_USER}
           
-          # Password သတ်မှတ်
-          echo 'ubuntu:Pass1234' | sudo chpasswd
-          
-          # sudo အသုံးပြုခွင့်ပေး
-          sudo usermod -aG sudo ubuntu
-
-          # SSH server install လုပ်ပါ
           sudo apt-get update -y
           sudo apt-get install -y openssh-server
 
-          # >>> အရေးကြီးဆုံး ပြင်ဆင်ချက် <<<
-          # Password ဖြင့် SSH Login ခွင့်ပြုရန် config ကိုပြင်ဆင်
-          sudo sed -i 's/^#?PasswordAuthentication .*/PasswordAuthentication yes/' /etc/ssh/sshd_config
-          
-          # SSH service enable and restart
+          # Password login enable
+          sudo sed -i 's/^#PasswordAuthentication .*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+          sudo sed -i 's/^PasswordAuthentication .*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+
           sudo systemctl enable ssh
           sudo systemctl restart ssh
 
-          echo "✅ SSH User: ubuntu"
-          echo "✅ SSH Password: Pass1234"
-          echo "============================"
+          echo "✅ SSH User: ${SSH_USER}"
+          echo "✅ SSH Password: Set via GitHub Secrets"
           echo "✅ Tailscale IP Address:"
           tailscale ip -4
 
