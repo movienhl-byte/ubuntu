@@ -25,33 +25,6 @@ jobs:
           sudo useradd -m ubuntu
           
           # Password သတ်မှတ်
-          echo 'ubuntu:Pass1234' | sudo name: Ubuntu SSH Server
-
-on:
-  workflow_dispatch:
-
-jobs:
-  ubuntu-ssh:
-    runs-on: ubuntu-latest
-    timeout-minutes: 3600
-
-    steps:
-      - name: Install Tailscale
-        run: |
-          curl -fsSL https://tailscale.com/install.sh | sh
-          sudo tailscale up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=gh-ubuntu-${{ github.run_id }}
-
-      - name: Show Tailscale IP
-        run: |
-          echo "✅ Tailscale IP Address:"
-          tailscale ip -4
-
-      - name: Create SSH User and Start SSH Server
-        run: |
-          # အသုံးပြုသူအသစ်ဖန်တီး
-          sudo useradd -m ubuntu
-          
-          # Password သတ်မှတ်
           echo 'ubuntu:Pass1234' | sudo chpasswd
           
           # sudo အသုံးပြုခွင့်ပေး
